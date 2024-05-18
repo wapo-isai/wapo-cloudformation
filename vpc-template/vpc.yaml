@@ -108,3 +108,75 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet1A
       RouteTableId: !Ref PublicRouteTable
+
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: "wapo-key-pair"
+      ImageId: "ami-0bb84b8ffd87024d8"
+      SubnetId: !Ref PublicSubnet1A
+      SecurityGroupIds:
+        - !Ref BastionSG
+      Tags:
+        - Key: Name
+          Value: BastionHost
+
+  BastionSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Enable SSH access"
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "**.***.**.**/32"
+
+  AppInstance1A:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: "t2.micro"
+      KeyName: "wapo-key-pair"
+      ImageId: "ami-0bb84b8ffd87024d8"
+      SubnetId: !Ref AppPrivateSubnet1A
+      SecurityGroupIds:
+        - !Ref AppInstance1ASG
+      Tags:
+        - Key: Name
+          Value: AppInstance1A
+
+  AppInstance1B:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: "t2.micro"
+      KeyName: "wapo-key-pair"
+      ImageId: "ami-0bb84b8ffd87024d8"
+      SubnetId: !Ref AppPrivateSubnet1B
+      SecurityGroupIds:
+        - !Ref AppInstance1BSG
+      Tags:
+        - Key: Name
+          Value: AppInstance1B
+
+  AppInstance1ASG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow SSH from Bastion"
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSG
+
+  AppInstance1BSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow ICMP Ping from App1A"
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: "icmp"
+          FromPort: -1
+          ToPort: -1
+          SourceSecurityGroupId: !Ref AppInstance1ASG
